@@ -176,6 +176,7 @@ const downloadFile = async function (url_dl, cb) {
 };
 
 function checkBool(string) {
+  if (typeof string == "boolean") return string;
   switch (string.toLowerCase().trim()) {
     case "true":
     case "yes":
