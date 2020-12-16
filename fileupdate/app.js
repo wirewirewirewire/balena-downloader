@@ -6,7 +6,7 @@ const configparser = require("./helpers/configparser.js");
 const baseurl = "https://exhibition-strapi.herokuapp.com/devices/6";
 
 var serverport = 3000;
-var timeout = configparser.check_env_var("SYNCTIMEOUT", 5000);
+var timeout = configparser.check_env_var("SYNCTIMEOUT", 5000); //Timeout for sleep between sync checks
 //Download Dir, URL für Config, isDebug?
 configparser.init(__dirname, baseurl, false);
 
@@ -30,7 +30,7 @@ function download() {
   });
 }
 download().then((ok) => {
-  serverport = configparser.check_env_var("SERVERPORT", serverport);
+  serverport = configparser.check_env_var("SERVERPORT", serverport); //Server port for Node server
   app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
   //app.use(express.static(configparser.get_content_dir()));
   app.listen(serverport, () => console.log("Static Server on Port: " + serverport));

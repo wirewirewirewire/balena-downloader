@@ -223,13 +223,13 @@ module.exports = {
     auth_pw = "osb23nmp"
   ) {
     console.log("---INIT FILESYNC---");
-    BASEPATH = checkENV("BASEPATH", basepath);
-    AUTH_USER = checkENV("AUTH_USER", auth_user);
-    AUTH_PW = checkENV("AUTH_PW", auth_pw, true);
-    UPDATE_FOLDER = checkENV("UPDATE_FOLDER", u_folder);
-    LIVE_FOLDER = checkENV("LIVE_FOLDER", l_folder);
-    BASE_URL = checkENV("BASE_URL", baseurl);
-    ISDEBUG = checkBool(checkENV("ISDEBUG", isdebug));
+    BASEPATH = checkENV("BASEPATH", basepath); //Path to the directory for downloads (app dir default)
+    AUTH_USER = checkENV("AUTH_USER", auth_user); //auth user for download
+    AUTH_PW = checkENV("AUTH_PW", auth_pw, true); //auth pw for download
+    UPDATE_FOLDER = checkENV("UPDATE_FOLDER", u_folder); //folder to save files in update
+    LIVE_FOLDER = checkENV("LIVE_FOLDER", l_folder); //folder to save files when download done
+    BASE_URL = checkENV("BASE_URL", baseurl); //url to config json with files
+    ISDEBUG = checkBool(checkENV("ISDEBUG", isdebug)); //enable debug for console output
     console.log("---INIT DONE---");
   },
   //ToDo: Clean JSON from not downloadable URLs
