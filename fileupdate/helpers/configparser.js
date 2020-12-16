@@ -222,19 +222,23 @@ module.exports = {
     auth_user = "ausstellung",
     auth_pw = "osb23nmp"
   ) {
-    console.log("---INIT FILESYNC---");
-    BASEPATH = checkENV("BASEPATH", basepath); //Path to the directory for downloads (app dir default)
-    AUTH_USER = checkENV("AUTH_USER", auth_user); //auth user for download
-    AUTH_PW = checkENV("AUTH_PW", auth_pw, true); //auth pw for download
-    UPDATE_FOLDER = checkENV("UPDATE_FOLDER", u_folder); //folder to save files in update
-    LIVE_FOLDER = checkENV("LIVE_FOLDER", l_folder); //folder to save files when download done
-    BASE_URL = checkENV("BASE_URL", baseurl); //url to config json with files
-    ISDEBUG = checkBool(checkENV("ISDEBUG", isdebug)); //enable debug for console output
-    console.log("---INIT DONE---");
+    return new Promise((resolve, reject) => {
+      console.log("---INIT FILESYNC---");
+      BASEPATH = checkENV("BASEPATH", basepath); //Path to the directory for downloads (app dir default)
+      AUTH_USER = checkENV("AUTH_USER", auth_user); //auth user for download
+      AUTH_PW = checkENV("AUTH_PW", auth_pw, true); //auth pw for download
+      UPDATE_FOLDER = checkENV("UPDATE_FOLDER", u_folder); //folder to save files in update
+      LIVE_FOLDER = checkENV("LIVE_FOLDER", l_folder); //folder to save files when download done
+      BASE_URL = checkENV("BASE_URL", baseurl); //url to config json with files
+      ISDEBUG = checkBool(checkENV("ISDEBUG", isdebug)); //enable debug for console output
+      console.log("---INIT DONE--- ");
+      resolve(true);
+    });
   },
   //ToDo: Clean JSON from not downloadable URLs
   parseUrls: function (address = BASE_URL) {
     return new Promise((resolve, reject) => {
+      console.log("Parse Adress: " + address);
       var request = http.request(
         {
           path: url.parse(address).pathname,
