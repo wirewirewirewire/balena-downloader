@@ -238,7 +238,6 @@ module.exports = {
   //ToDo: Clean JSON from not downloadable URLs
   parseUrls: function (address = BASE_URL) {
     return new Promise((resolve, reject) => {
-      console.log("Parse Adress: " + address);
       var request = http.request(
         {
           path: url.parse(address).pathname,
