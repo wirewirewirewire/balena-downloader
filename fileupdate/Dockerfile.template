@@ -17,9 +17,13 @@ WORKDIR /usr/src/app
 
 COPY app.js app.js
 COPY start start
+
+RUN chmod 777 start
+RUN chown root:root start
+
 COPY ./helpers ./helpers
 COPY package.json package.json
 
 COPY --from=build /usr/src/app/node_modules ./node_modules
 
-CMD ./start
+CMD ["bash", "./start"]
