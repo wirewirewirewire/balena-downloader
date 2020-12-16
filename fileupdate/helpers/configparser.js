@@ -327,7 +327,8 @@ module.exports = {
           URL_IGNORES.push(element);
           console.log("File from JSON not found (SYNC ERROR): " + LIVE_FOLDER + url.parse(element).pathname);
         }
-        ConfigJSON = JSON.parse(JSON.stringify(ConfigJSON).replace(element, url.parse(element).pathname));
+        var re = new RegExp(element, "g");
+        ConfigJSON = JSON.parse(JSON.stringify(ConfigJSON).replace(re, url.parse(element).pathname));
       });
       result.splice(result.indexOf(BASEPATH + "/" + LIVE_FOLDER + "/config.json"), 1);
       result.splice(result.indexOf(BASEPATH + "/" + LIVE_FOLDER + "/config_files.json"), 1);
