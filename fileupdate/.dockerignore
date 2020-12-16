@@ -1,0 +1,7 @@
+#ignore the imgs for docs
+/img/
+/node_modules/
+node_modules/
+**/node_modules
+**/update_live
+**/update_tmp

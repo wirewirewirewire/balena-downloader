@@ -1,0 +1,11 @@
+**/.DS_Store
+dist
+node_modules
+fileupdate/node_modules
+fileupdate/package-lock.json
+fileupdate/update_live
+update_live
+splash
+.resin-sync.yml
+local.sh
+README.md

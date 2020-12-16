@@ -1,0 +1,18 @@
+{
+  "name": "balena-cms",
+  "scripts": {
+    "start": "node app.js",
+    "nodemon": "nodemon app.js --ignore */update_tmp/*",
+    "start:local": "nodemon app.js"
+  },
+  "dependencies": {
+    "fs": "latest",
+    "get-urls": "latest",
+    "async": "latest",
+    "express": "latest",
+    "serve-index": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.3"
+  }
+}

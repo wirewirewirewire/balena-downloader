@@ -1,0 +1,38 @@
+version: "2"
+volumes:
+  workdir:
+services:
+  fileupdate:
+    build: ./fileupdate
+    privileged: true
+    volumes:
+      - "workdir:/usr/src/app/update_live"
+    labels:
+      io.resin.features.dbus: "1"
+      io.resin.features.kernel-modules: "1"
+      io.resin.features.firmware: "1"
+#  wpe:
+#    restart: always
+#    build: ./wpe
+#    volumes:
+#      - 'video:/video'
+#    privileged: true
+#    labels:
+#      io.resin.features.dbus: '1'
+#      io.resin.features.kernel-modules: '1'
+#      io.resin.features.firmware: '1'
+#  router:
+#    network_mode: host
+#    build: ./router
+#    volumes:
+#      - 'router_conf:/usr/src/app/run'
+#    privileged: true
+#    environment:
+#    - ROUTER_IP=230
+#    labels:
+#      io.resin.features.dbus: '1'
+#      io.resin.features.kernel-modules: '1'
+#      io.resin.features.firmware: '1'
+#  chromium-kiosk:
+#    build: ./chromium
+#    privileged: true

@@ -1,0 +1,16 @@
+npm-debug.log
+node_modules
+build
+
+.idea/
+.env
+.vscode/launch.json
+*.code-workspace
+package-lock.json
+update_live/
+update_tmp/
+update_live*/
+update_tmp*/
+chromium_intel/user/index - Kopie.html
+chromium_intel/user/video.mp4
+electron-intel/
