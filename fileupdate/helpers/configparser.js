@@ -266,7 +266,9 @@ module.exports = {
           });
         }
       );
-      request.on("error", (err) => reject(err));
+      request.on("error", (err) => {
+        reject(err);
+      });
       request.end();
     });
   },
