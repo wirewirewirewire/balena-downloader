@@ -10,7 +10,8 @@
     "get-urls": "latest",
     "async": "latest",
     "express": "latest",
-    "serve-index": "latest"
+    "serve-index": "latest",
+    "cli-progress": "latest"
   },
   "devDependencies": {
     "nodemon": "^1.18.3"

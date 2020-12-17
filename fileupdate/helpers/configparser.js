@@ -5,8 +5,11 @@ var url = require("url");
 var fs = require("fs");
 var path = require("path");
 const async = require("async");
+const cliProgress = require("cli-progress");
 
 var URL_IGNORES = [];
+const bars = [];
+var bars_multi;
 
 var UPDATE_FOLDER = "";
 var LIVE_FOLDER = "";
@@ -33,6 +36,7 @@ function deleteFiles(files, callback) {
     });
   });
 }
+
 function copyFileSync(source, target) {
   var targetFile = target;
 
@@ -114,65 +118,82 @@ var listFilesRecursive = function (dir, done) {
     })();
   });
 };
-const downloadFile = async function (url_dl, cb) {
-  //return new Promise((resolve, reject) => {
-  var dest = url.parse(url_dl).pathname;
-  var dest_string = dest.indexOf("/") == 0 ? dest.substring(1) : dest;
-  if (!fs.existsSync(LIVE_FOLDER + "/" + dest_string) && !fs.existsSync(UPDATE_FOLDER + "/" + dest_string)) {
-    console.log("Download URL: " + url_dl);
-    var folders = dest_string.split("/");
-    var j;
-    var struct = UPDATE_FOLDER + "/";
-    if (!fs.existsSync(struct)) {
-      fs.mkdirSync(struct);
-    }
-    for (j = 0; j < folders.length - 1; j++) {
-      struct = struct + folders[j];
-      if (fs.existsSync(struct) && !fs.existsSync(struct + "/")) {
-        console.log("Del File blocking Folder " + struct);
-        fs.unlinkSync(struct);
-      }
-      struct = struct + "/";
+const downloadFile = async function (url_dl, cli_index = 0, cb = null) {
+  return new Promise((resolve, reject) => {
+    var dest = url.parse(url_dl).pathname;
+    var dest_string = dest.indexOf("/") == 0 ? dest.substring(1) : dest;
+    if (!fs.existsSync(LIVE_FOLDER + "/" + dest_string) && !fs.existsSync(UPDATE_FOLDER + "/" + dest_string)) {
+      //console.log("Download URL: " + url_dl);
+      var folders = dest_string.split("/");
+      var j;
+      var struct = UPDATE_FOLDER + "/";
       if (!fs.existsSync(struct)) {
         fs.mkdirSync(struct);
       }
-    }
-    struct = "";
-    var file = fs.createWriteStream(UPDATE_FOLDER + "/" + dest_string);
-    var request = http
-      .get(
-        {
-          path: url.parse(url_dl).pathname,
-          hostname: url.parse(url_dl).hostname,
-          //auth: AUTH_USER + ":" + AUTH_PW,
-        },
-        function (response) {
-          if (response.statusCode < 200 || response.statusCode > 299) {
-            //console.log("Error Code:" + response.statusCode + " URL: " + url_dl);
-            fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
-              console.log("Error Code:" + response.statusCode + " Del File: " + UPDATE_FOLDER + "/" + dest_string);
+      for (j = 0; j < folders.length - 1; j++) {
+        struct = struct + folders[j];
+        if (fs.existsSync(struct) && !fs.existsSync(struct + "/")) {
+          console.log("Del File blocking Folder " + struct);
+          fs.unlinkSync(struct);
+        }
+        struct = struct + "/";
+        if (!fs.existsSync(struct)) {
+          fs.mkdirSync(struct);
+        }
+      }
+      struct = "";
+      var file = fs.createWriteStream(UPDATE_FOLDER + "/" + dest_string);
+      var request = http
+        .get(
+          {
+            path: url.parse(url_dl).pathname,
+            hostname: url.parse(url_dl).hostname,
+            //auth: AUTH_USER + ":" + AUTH_PW,
+          },
+          function (response) {
+            if (response.statusCode < 200 || response.statusCode > 299) {
+              //console.log("Error Code:" + response.statusCode + " URL: " + url_dl);
+              fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
+                console.log("Error Code:" + response.statusCode + " Del File: " + UPDATE_FOLDER + "/" + dest_string);
+              });
+            }
+            response.pipe(file);
+
+            var download_size = Math.round(response.headers["content-length"] / 1048576);
+            bars[cli_index] = bars_multi.create(download_size, 0, { filename: dest_string });
+            //console.log(" " + url_dl + ` (${download_size} MB)`);
+            var download_log = setInterval(function () {
+              var stats = fs.statSync(UPDATE_FOLDER + "/" + dest_string);
+              var size = Math.round(stats.size / 1048576);
+              bars[cli_index].update(size, { filename: dest_string });
+              //printSameline("Status: " + Math.round((size / download_size) * 100) + "% (" + size + " MB)");
+              //console.log("Status: " + Math.round((size / download_size) * 100) + "% (" + size + " MB)");
+            }, 2000);
+            file.on("finish", function () {
+              clearInterval(download_log);
+              bars[cli_index].update(download_size, { filename: dest_string });
+              bars[cli_index].stop();
+              //console.log("Download Finished URL: " + url_dl);
+              file.close(resolve(true));
+              //file.close(cb); // close() is async, call cb after close completes.
             });
           }
-          response.pipe(file);
-          file.on("finish", function () {
-            //console.log("Download Finished URL: " + url_dl);
-            file.close(cb); // close() is async, call cb after close completes.
-          });
-        }
-      )
-      .on("error", function (err) {
-        // Handle errors
-        console.log("Err: " + err);
-        fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
-          console.log("error");
-          if (cb) cb(err.message);
-        }); // Delete the file async. (But we don't check the result)
-      });
-  } else {
-    //console.log("File Exists");
-    cb(null);
-  }
-  //});
+        )
+        .on("error", function (err) {
+          // Handle errors
+          console.log("Err: " + err);
+          fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
+            console.log("error");
+            //if (cb) cb(err.message);
+            resolve(err.message);
+          }); // Delete the file async. (But we don't check the result)
+        });
+    } else {
+      if (ISDEBUG) console.log("File Exists");
+      resolve(false);
+      //cb(null);
+    }
+  });
 };
 
 function checkBool(string) {
@@ -231,6 +252,17 @@ module.exports = {
       LIVE_FOLDER = checkENV("LIVE_FOLDER", l_folder); //folder to save files when download done
       BASE_URL = checkENV("BASE_URL", baseurl); //url to config json with files
       ISDEBUG = checkBool(checkENV("ISDEBUG", isdebug)); //enable debug for console output
+      deleteFolderRecursive(UPDATE_FOLDER);
+
+      bars_multi = new cliProgress.MultiBar(
+        {
+          clearOnComplete: false,
+          hideCursor: true,
+          format: "{bar} {percentage}%  | ETA: {eta}s | {value}/{total} MB | {filename}",
+        },
+        cliProgress.Presets.shades_grey
+      );
+
       console.log("---INIT DONE--- ");
       resolve(true);
     });
@@ -281,7 +313,7 @@ module.exports = {
       if (fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json")) {
         if (fs.readFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json") == ConfigJSON) {
           if (ISDEBUG) console.log("Config Exists and is Sync");
-          resolve("sync");
+          //resolve("sync");
           //return;
         }
       }
@@ -289,15 +321,24 @@ module.exports = {
         console.log("No URLs to Download");
         resolve(false);
       }
+      newdl_counter = 0;
       async
         .forEachOfLimit(urls, 5, (value, key, callback) => {
-          downloadFile(value, callback);
-          //console.log(util.inspect(this, { showHidden: false, depth: null }));
+          downloadFile(value, key).then(function (status) {
+            if (ISDEBUG) console.log("isDownload: " + status);
+            if (!status == true) newdl_counter++;
+            callback();
+          });
         })
         //downloadFile(urls[4], null)
         .then(() => {
-          if (ISDEBUG) console.log("Download Done");
-          resolve(true);
+          if (ISDEBUG) console.log("Download Done - skipped:" + newdl_counter + " from: " + urls.length);
+          bars_multi.stop();
+          if (newdl_counter == urls.length) {
+            resolve("sync");
+          } else {
+            resolve(true);
+          }
         })
         .catch((err) => {
           console.error("Download Error: " + err);
@@ -345,7 +386,7 @@ module.exports = {
       });
     });
     deleteFolderRecursive(UPDATE_FOLDER);
-    if (ISDEBUG) console.log("---ALL DONE---");
+    console.log("---ALL DONE---");
   },
   get_content_dir: function () {
     return LIVE_FOLDER;
