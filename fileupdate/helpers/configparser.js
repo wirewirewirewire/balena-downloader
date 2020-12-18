@@ -258,7 +258,7 @@ module.exports = {
         {
           clearOnComplete: false,
           hideCursor: true,
-          format: "                    {bar} {percentage}%  | ETA: {eta}s | {value}/{total} MB | {filename}",
+          format: "                                        {bar} {percentage}%  | ETA: {eta}s | {value}/{total} MB | {filename}",
         },
         cliProgress.Presets.shades_grey
       );
