@@ -258,7 +258,7 @@ module.exports = {
         {
           clearOnComplete: false,
           hideCursor: true,
-          format: "{bar} {percentage}%  | ETA: {eta}s | {value}/{total} MB | {filename}",
+          format: "                    {bar} {percentage}%  | ETA: {eta}s | {value}/{total} MB | {filename}",
         },
         cliProgress.Presets.shades_grey
       );
@@ -310,12 +310,17 @@ module.exports = {
       if (ISDEBUG) console.log("--DOWNLOAD " + urls.length + " FILES--");
       if (ISDEBUG) console.log(urls);
       //console.log(fs.readFileSync(BASEPATH + '/' + LIVE_FOLDER + "/config.json") == ConfigJSON)
+      var configSync = false;
       if (fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json")) {
         if (fs.readFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json") == ConfigJSON) {
-          if (ISDEBUG) console.log("Config Exists and is Sync");
+          configSync = true;
           //resolve("sync");
           //return;
+        } else {
+          console.log("Config Update");
+          configSync = false;
         }
+        if (ISDEBUG) console.log("configSync: " + configSync);
       }
       if (typeof urls === "undefined" && !urls.length > 0) {
         console.log("No URLs to Download");
@@ -333,10 +338,10 @@ module.exports = {
         //downloadFile(urls[4], null)
         .then(() => {
           if (ISDEBUG) console.log("Download Done - skipped:" + newdl_counter + " from: " + urls.length);
-          bars_multi.stop();
-          if (newdl_counter == urls.length) {
+          if (newdl_counter == urls.length && configSync) {
             resolve("sync");
           } else {
+            bars_multi.stop();
             resolve(true);
           }
         })
@@ -386,7 +391,7 @@ module.exports = {
       });
     });
     deleteFolderRecursive(UPDATE_FOLDER);
-    console.log("---ALL DONE---");
+    console.log("---UPDATE ALL DONE---");
   },
   get_content_dir: function () {
     return LIVE_FOLDER;
