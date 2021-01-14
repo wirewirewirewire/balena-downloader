@@ -1,6 +1,6 @@
 ## File Downloader for Balena
 
-This is a simple Express server project that works on any of the [balena][balena-link] supported devices. It can download a specific json file and all connected files and then provides them as a static local (offline) server. This can be useful for offline first interactive mediaplayer like [balena-player][https://github.com/wirewirewirewire/balena-player].
+This is a simple Express server project that works on any of the [balena][balena-link] supported devices. It can download a specific json file and all connected files and then provides them as a static local (offline) server. It will automatically update the content if changes are available. This can be useful for offline first interactive mediaplayer like [balena-player](https://github.com/wirewirewirewire/balena-player).
 
 This project serves the downloaded all connected files:
 http://fileupdate:3000/config_files.json
@@ -17,8 +17,8 @@ Set the BASE_URL service variable (service: fileupdate) to your endpoint (https:
 
 ### Used by
 
-[balena-player][https://github.com/wirewirewirewire/balena-player] A media player with button support for Raspberry Pi based on OMX player
-[balena-react-mediaplayer][https://github.com/wirewirewirewire/balena-react-mediaplayer] A media player with touch support for Raspberry Pi based on Electron and react.js
+- [balena-player](https://github.com/wirewirewirewire/balena-player) A media player with button support for Raspberry Pi based on OMX player
+- [balena-react-mediaplayer](https://github.com/wirewirewirewire/balena-react-mediaplayer) A media player with touch support for Raspberry Pi based on Electron and react.js
 
 [balena-link]: https://balena.io/
 [signup-page]: https://dashboard.balena-cloud.com/signup
