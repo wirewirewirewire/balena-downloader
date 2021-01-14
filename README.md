@@ -2,10 +2,6 @@
 
 This is a simple Express server project that works on any of the [balena][balena-link] supported devices. It can download a specific json file and all connected files and then provides them as a static local (offline) server. It will automatically update the content if changes are available. This can be useful for offline first interactive mediaplayer like [balena-player](https://github.com/wirewirewirewire/balena-player).
 
-This project serves the downloaded all connected files:
-http://fileupdate:3000/config_files.json
-http://fileupdate:3000/exampleVideo.mp4
-
 ### How to use
 To get this project up and running, you will need to signup for a balena account [here][signup-page] and set up an application and device. You'll find full details in our [Getting Started tutorial][gettingstarted-link].
 
@@ -13,9 +9,15 @@ Once you have downloaded this project, you can `balena push` it using the [balen
 
 Set the `BASE_URL` service variable (service: fileupdate) to your endpoint (https://example.com/data.json)
 
+Now the project serves the downloaded json and all connected files:
+```
+http://fileupdate:3000/config_files.json // The entrypoint json
+http://fileupdate:3000/exampleVideo.mp4 // a file defined in the entrypoint json
+```
+
 #### Entrypoint json example
 
-```
+```json
 {
 "id":2,
 "Description": "This file will be also downloaded http://www.example.com/mediaFile.mp4",
