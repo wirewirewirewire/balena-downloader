@@ -291,7 +291,20 @@ module.exports = {
             //console.log("Session: %j", json);
             let text = JSON.stringify(json);
             ConfigJSON = text;
+            if (ISDEBUG) console.log("Excluded URLs");
+            if (ISDEBUG) console.log(URL_IGNORES);
             urls_data = Array.from(getUrls(text, { requireSchemeOrWww: true, exclude: URL_IGNORES }));
+            URL_IGNORES.forEach((element) => {
+              if (urls_data.indexOf(element) > -1) {
+                let index = urls_data.indexOf(element);
+                if (ISDEBUG) console.log("Found index in Output " + index);
+                urls_data.splice(index, index + 1);
+                //In the array!
+              }
+            });
+
+            if (ISDEBUG) console.log("Left for DL URLs");
+            if (ISDEBUG) console.log(urls_data);
             //Filter URLS that are not wanted (no files)
             ParsedFiles = urls_data;
             resolve(urls_data);

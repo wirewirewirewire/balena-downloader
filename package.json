@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "fs": "latest",
-    "get-urls": "latest",
+    "get-urls": "9.2.0",
     "async": "latest",
     "express": "latest",
     "serve-index": "latest",
