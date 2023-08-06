@@ -15,6 +15,41 @@ http://fileupdate:3000/config_files.json // The entrypoint json
 http://fileupdate:3000/exampleVideo.mp4 // a file defined in the entrypoint json
 ```
 
+### Coming soon: CURL Endpoint ⚙️
+
+Use `BASE_CURL` instead of `BASE_URL` to download via a custom curl command. This allows you to use authentification, use [GraphQL](https://graphql.org) and more.
+
+```
+curl --location 'https://osb.exhibitions.wirewire.de/api/graphql' \
+--header 'Content-Type: application/json' \
+--data '{"query":"query post($slug: String!) {\n    post(where: {slug: $slug}) {\n      id\n      title\n      slug\n      subtitle\n      content\n      excerpt\n      entries {\n        id\n        title\n        slug\n        content\n     \n      }\n      image {\n        title\n        image { publicUrl }\n      }\n      detailImage {\n        title\n        image { publicUrl }\n      }\n      publishDate\n    }\n  }","variables":{"slug":"album"}}'
+```
+
+By addding multiple `curl --filename 'anotherfile.json' --location` you can download more endpoints. Make sure to set `--filename 'name.json'` to name the downloaded content.
+
+### Comming soon: Endpoint list 📦
+
+`BASE_ENDPOINTS` or `BASE_ENDPOINTS_CURL`
+
+By using an endpoint with an endpoint list you can setup a list of downloadable files. Use curl to add a custom request. Use either url or curl ([httpsnippet](https://www.npmjs.com/package/httpsnippet)). If filename is not defined it will try using the original path.
+
+ALTERNATIVE: remain using `BASE_URL` and `BASE_CURL` and trigger the download if a matching object pattern is present in the result (e.g. object containing `filename` and `curl`.
+
+```
+[
+  {
+    "curl": "CURL request",
+    "url": "Alternative using an url",
+    "filename": "path/to/file.json"
+  },
+  {
+    "curl": "CURL request",
+    "url": "Alternative using an url",
+    "filename": "path/to/file.json"
+  }
+]
+```
+
 #### Entrypoint json example
 
 ```json
