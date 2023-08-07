@@ -1,11 +1,20 @@
-const util = require("util");
+/*const util = require("util");
 const http = require("http");
 const getUrls = require("get-urls");
 var url = require("url");
 var fs = require("fs");
 var path = require("path");
 const async = require("async");
-const cliProgress = require("cli-progress");
+const cliProgress = require("cli-progress");*/
+
+//const getUrls = await import("get-urls");
+import http from "http";
+import getUrls from "get-urls";
+import url from "url";
+import fs from "fs";
+import path from "path";
+import async from "async";
+import cliProgress from "cli-progress";
 
 var URL_IGNORES = [];
 const bars = [];
@@ -232,7 +241,7 @@ function checkENV(ENV, alt_var, secret = false) {
   }
 }
 
-module.exports = {
+export const configparser = {
   //Get all Download links from json
   init: function (
     basepath,

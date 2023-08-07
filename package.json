@@ -1,17 +1,16 @@
 {
   "name": "balena-cms",
   "scripts": {
-    "start": "node app.js",
+    "start": "node app.mjs",
     "nodemon": "nodemon app.js --ignore */update_tmp/*",
     "start:local": "nodemon app.js"
   },
   "dependencies": {
-    "fs": "latest",
-    "get-urls": "9.2.0",
-    "async": "latest",
-    "express": "latest",
-    "serve-index": "latest",
-    "cli-progress": "latest"
+    "async": "^3.2.4",
+    "cli-progress": "^3.12.0",
+    "express": "^4.18.2",
+    "get-urls": "^12.0.0",
+    "serve-index": "^1.9.1"
   },
   "devDependencies": {
     "nodemon": "^1.18.3"
