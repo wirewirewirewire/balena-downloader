@@ -1,13 +1,3 @@
-/*const util = require("util");
-const http = require("http");
-const getUrls = require("get-urls");
-var url = require("url");
-var fs = require("fs");
-var path = require("path");
-const async = require("async");
-const cliProgress = require("cli-progress");*/
-
-//const getUrls = await import("get-urls");
 import http from "http";
 import getUrls from "get-urls";
 import url from "url";
@@ -30,10 +20,20 @@ var BASEPATH; //Base of the running app (absolut)
 var BASE_URL;
 var ISDEBUG = false;
 
+function IsJsonString(str) {
+  var result;
+  try {
+    result = JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return result;
+}
+
 function deleteFiles(files, callback) {
   var i = files.length;
   files.forEach(function (filepath) {
-    console.log("Del File from Live:" + filepath);
+    console.log("[FILES] Del File from Live:" + filepath);
     fs.unlink(filepath, function (err) {
       i--;
       if (err) {
@@ -81,7 +81,7 @@ function copyFolderRecursiveSync(source, target) {
       if (fs.lstatSync(curSource).isDirectory()) {
         copyFolderRecursiveSync(curSource, targetFolder);
       } else {
-        console.log("Sync: " + curSource + "  To: " + targetFolder + "/" + file);
+        console.log("[FILES] Sync: " + curSource + "  To: " + targetFolder + "/" + file);
         copyFileSync(curSource, targetFolder);
       }
     });
@@ -101,7 +101,7 @@ const deleteFolderRecursive = function (filepath) {
     });
     fs.rmdirSync(filepath);
   } else {
-    if (ISDEBUG) console.log("No Files to Clean");
+    if (ISDEBUG) console.log("[FILES] No Files to Clean");
   }
 };
 var listFilesRecursive = function (dir, done) {
@@ -142,7 +142,7 @@ const downloadFile = async function (url_dl, cli_index = 0, cb = null) {
       for (j = 0; j < folders.length - 1; j++) {
         struct = struct + folders[j];
         if (fs.existsSync(struct) && !fs.existsSync(struct + "/")) {
-          console.log("Del File blocking Folder " + struct);
+          console.log("[DOWNLOADER] del file blocking folder " + struct);
           fs.unlinkSync(struct);
         }
         struct = struct + "/";
@@ -163,7 +163,7 @@ const downloadFile = async function (url_dl, cli_index = 0, cb = null) {
             if (response.statusCode < 200 || response.statusCode > 299) {
               //console.log("Error Code:" + response.statusCode + " URL: " + url_dl);
               fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
-                console.log("Error Code:" + response.statusCode + " Del File: " + UPDATE_FOLDER + "/" + dest_string);
+                console.log("[DOWNLOADER] ERR code:" + response.statusCode + " del file: " + UPDATE_FOLDER + "/" + dest_string);
               });
             }
             response.pipe(file);
@@ -190,15 +190,15 @@ const downloadFile = async function (url_dl, cli_index = 0, cb = null) {
         )
         .on("error", function (err) {
           // Handle errors
-          console.log("Err: " + err);
+          console.log("[DOWNLOADER] ERR: " + err);
           fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
-            console.log("error");
+            console.log("[DOWNLOADER] ERR:");
             //if (cb) cb(err.message);
             resolve(err.message);
           }); // Delete the file async. (But we don't check the result)
         });
     } else {
-      if (ISDEBUG) console.log("File Exists");
+      if (ISDEBUG) console.log("[DOWNLOADER] file exists");
       resolve(false);
       //cb(null);
     }
@@ -226,16 +226,16 @@ function checkENV(ENV, alt_var, secret = false) {
   //console.log(eval("process.env." +  ENV))
   if (eval("process.env." + ENV)) {
     if (secret) {
-      console.log("Set " + ENV + " from ENV to: ***");
+      console.log("[SETVAR] " + ENV + " from ENV to: ***");
     } else {
-      console.log("Set " + ENV + " from ENV to: " + eval("process.env." + ENV));
+      console.log("[SETVAR] " + ENV + " from ENV to: " + eval("process.env." + ENV));
     }
     return eval("process.env." + ENV);
   } else {
     if (secret) {
-      console.log("Set " + ENV + " from Default to: ***");
+      console.log("[SETVAR] " + ENV + " from Default to: ***");
     } else {
-      console.log("Set " + ENV + " from Default to: " + alt_var);
+      console.log("[SETVAR] " + ENV + " from Default to: " + alt_var);
     }
     return alt_var;
   }
@@ -287,7 +287,7 @@ export const configparser = {
         },
         function (response) {
           if (response.statusCode < 200 || response.statusCode > 299) {
-            reject(new Error("Failed to load page, status code: " + response.statusCode));
+            reject("[PARSE] ERR failed to load page, status code: " + response.statusCode);
           }
           response.setEncoding("utf8");
           let urls_data;
@@ -296,11 +296,14 @@ export const configparser = {
             data += chunk;
           });
           response.on("end", () => {
-            let json = JSON.parse(data);
+            let json = IsJsonString(data);
             //console.log("Session: %j", json);
+            if (json == false) {
+              reject("[PARSE] ERR response is no valid json");
+            }
             let text = JSON.stringify(json);
             ConfigJSON = text;
-            if (ISDEBUG) console.log("Excluded URLs");
+            if (ISDEBUG) console.log("[PARSE] Excluded URLs");
             if (ISDEBUG) console.log(URL_IGNORES);
             urls_data = Array.from(getUrls(text, { requireSchemeOrWww: true, exclude: URL_IGNORES }));
             URL_IGNORES.forEach((element) => {
@@ -312,7 +315,7 @@ export const configparser = {
               }
             });
 
-            if (ISDEBUG) console.log("Left for DL URLs");
+            if (ISDEBUG) console.log("[PARSE] Left for DL URLs");
             if (ISDEBUG) console.log(urls_data);
             //Filter URLS that are not wanted (no files)
             ParsedFiles = urls_data;
@@ -339,27 +342,27 @@ export const configparser = {
           //resolve("sync");
           //return;
         } else {
-          console.log("Config Update");
+          console.log("[DOWNLOAD] Config Update");
           configSync = false;
         }
-        if (ISDEBUG) console.log("configSync: " + configSync);
+        if (ISDEBUG) console.log("[DOWNLOAD] configSync: " + configSync);
       }
       if (typeof urls === "undefined" && !urls.length > 0) {
-        console.log("No URLs to Download");
+        console.log("[DOWNLOAD] No URLs to Download");
         resolve(false);
       }
       newdl_counter = 0;
       async
         .forEachOfLimit(urls, 5, (value, key, callback) => {
           downloadFile(value, key).then(function (status) {
-            if (ISDEBUG) console.log("isDownload: " + status);
+            if (ISDEBUG) console.log("[DOWNLOAD] isDownload: " + status);
             if (!status == true) newdl_counter++;
             callback();
           });
         })
         //downloadFile(urls[4], null)
         .then(() => {
-          if (ISDEBUG) console.log("Download Done - skipped:" + newdl_counter + " from: " + urls.length);
+          if (ISDEBUG) console.log("[DOWNLOAD] Done - skipped:" + newdl_counter + " from: " + urls.length);
           if (newdl_counter == urls.length && configSync) {
             resolve("sync");
           } else {
@@ -376,10 +379,10 @@ export const configparser = {
   //Copy Temp Downloads to Live System
   sync: function () {
     if (fs.existsSync(UPDATE_FOLDER)) {
-      if (ISDEBUG) console.log("Begin Sync");
+      if (ISDEBUG) console.log("[SYNC] Begin");
       copyFolderRecursiveSync(UPDATE_FOLDER, LIVE_FOLDER);
     } else {
-      if (ISDEBUG) console.log("No Temp Folder - No Files to Sync");
+      if (ISDEBUG) console.log("[SYNC] No Temp Folder - No Files to Sync");
     }
   },
   clean: function () {
@@ -393,9 +396,9 @@ export const configparser = {
         if (element_index !== -1) {
           result.splice(element_index, 1);
         } else {
-          console.log("Add to Ignor:" + element);
+          console.log("[SYNC] Add to Ignor:" + element);
           URL_IGNORES.push(element);
-          console.log("File from JSON not found (SYNC ERROR): " + LIVE_FOLDER + url.parse(element).pathname);
+          console.log("[SYNC] ERR File from JSON not found: " + LIVE_FOLDER + url.parse(element).pathname);
         }
         var re = new RegExp(element, "g");
         ConfigJSON = JSON.parse(JSON.stringify(ConfigJSON).replace(re, url.parse(element).pathname));
@@ -408,7 +411,7 @@ export const configparser = {
         if (err) {
           console.log(err);
         } else {
-          console.log("All Files not in JSON removed");
+          console.log("[SYNC] all files that are not in JSON removed");
         }
       });
     });

@@ -6,8 +6,6 @@ import path from "path";
 const app = express();
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-console.log(configparser);
-
 //const configparser = require("./helpers/configparser.mjs");
 
 const baseurl = "https://exhibition-strapi.herokuapp.com/devices/12";
@@ -22,7 +20,7 @@ async function main() {
       serverport = configparser.check_env_var("SERVERPORT", serverport); //Server port for Node server
       app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
       //app.use(express.static(configparser.get_content_dir()));
-      app.listen(serverport, () => console.log("Static Server on Port: " + serverport));
+      app.listen(serverport, () => console.log("[SERVER] static server on port: " + serverport));
     });
   });
 }
@@ -31,23 +29,27 @@ main();
 
 function download(timeout) {
   return new Promise((resolve, reject) => {
-    configparser
-      .parseUrls()
-      .then((urls) => {
-        configparser.download(urls).then((isDownload) => {
-          if (isDownload) {
-            configparser.sync();
-            if (isDownload != "sync") configparser.clean();
-            resolve(true);
-            setTimeout(arguments.callee, timeout);
-          }
+    function downloadLoop() {
+      configparser
+        .parseUrls()
+        .then((urls) => {
+          configparser.download(urls).then((isDownload) => {
+            if (isDownload) {
+              configparser.sync();
+              if (isDownload != "sync") configparser.clean();
+              resolve(true);
+              setTimeout(downloadLoop, timeout);
+            }
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+          console.error("[MAIN] ERR try to restart ....");
+          resolve(true);
+          setTimeout(downloadLoop, timeout);
         });
-      })
-      .catch((err) => {
-        console.error(err);
-        resolve(true);
-        setTimeout(arguments.callee, timeout);
-      });
+    }
+    downloadLoop();
 
     //setTimeout(arguments.callee, 3000);
   });
