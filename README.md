@@ -3,6 +3,7 @@
 This is a simple Express server project that works on any of the [balena][balena-link] supported devices. It can download a specific json file and all connected files and then provides them as a static local (offline) server. It will automatically update the content if changes are available. This can be useful for offline first interactive mediaplayer like [balena-player](https://github.com/wirewirewirewire/balena-player).
 
 ### How to use
+
 To get this project up and running, you will need to signup for a balena account [here][signup-page] and set up an application and device. You'll find full details in our [Getting Started tutorial][gettingstarted-link].
 
 Once you have downloaded this project, you can `balena push` it using the [balenaCLI][balena-cli]. This command will package up and push the code to the balena builders, where it will be compiled and built and deployed to every device in the application fleet. When it completes, you'll have a node.js web server running on your device and see some logs on your [balenaCloud dashboard][balena-dashboard].
@@ -10,6 +11,7 @@ Once you have downloaded this project, you can `balena push` it using the [balen
 Set the `BASE_URL` service variable (service: fileupdate) to your endpoint (https://example.com/data.json)
 
 Now the project serves the downloaded json and all connected files:
+
 ```
 http://fileupdate:3000/config_files.json // The entrypoint json
 http://fileupdate:3000/exampleVideo.mp4 // a file defined in the entrypoint json
@@ -19,9 +21,9 @@ http://fileupdate:3000/exampleVideo.mp4 // a file defined in the entrypoint json
 
 ```json
 {
-"id":2,
-"Description": "This file will be also downloaded http://www.example.com/mediaFile.mp4",
-"file": "http://www.example.com/thisImageIsAlsoDownloaded.jpg",
+  "id": 2,
+  "Description": "This file will be also downloaded http://www.example.com/mediaFile.mp4",
+  "file": "http://www.example.com/thisImageIsAlsoDownloaded.jpg"
 }
 ```
 
@@ -49,3 +51,19 @@ io.resin.features.dbus: "1"
 io.resin.features.kernel-modules: "1"
 io.resin.features.firmware: "1"
 ```
+
+### Environment variables
+
+The following environment variables allow configuration of the `balena-downloader` :
+
+| Environment variable | Options                | Default                      | Description                                                                                                     |
+| -------------------- | ---------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `SYNCTIMEOUT`        | Number(mseconds)       | 5000                         | Intervall to check for file Updates                                                                             |
+| `SERVERPORT`         | port number            | 3000                         | port of the included file server                                                                                |
+| `TOKEN`              | String(token)          | N/A                          | Token to download the initial config file. It will be added as param to BASE_URL                                |
+| `SLUG`               | String(slug)           | N/A                          | Slug to download the content. It will be added as param to BASE_URL                                             |
+| `BASEPATH`           | String(path to folder) | `__dirname` or run directory | The root directory to create the download and temp folders                                                      |
+| `UPDATE_FOLDER`      | String(foldername)     | update_tmp                   | Name of the folder to store temp files while download                                                           |
+| `LIVE_FOLDER`        | String(foldername)     | update_live                  | Name of the folder to store the production data. This folder should be mounted and shared to other applications |
+| `BASE_URL`           | URL                    | N/A                          | The URL to get the download config file.                                                                        |
+| `ISDEBUG`            | bool                   | false                        | Enable debug logging. Should be disabled in production                                                          |
