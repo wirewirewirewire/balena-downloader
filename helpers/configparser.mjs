@@ -1,5 +1,8 @@
 import https from "https";
+import http from "http";
 import url from "url";
+import getUrls from "get-urls";
+
 import fs from "fs";
 import path from "path";
 import async from "async";
@@ -23,18 +26,22 @@ function IsJsonString(str) {
   return result;
 }
 
-function deleteFiles(files, callback) {
-  var i = files.length;
-  files.forEach(function (filepath) {
-    console.log("[FILES] Del File from Live:" + filepath);
-    fs.unlink(filepath, function (err) {
-      i--;
-      if (err) {
-        callback(err);
-        return;
-      } else if (i <= 0) {
-        callback(null);
-      }
+function deleteFiles(files) {
+  return new Promise((resolve, reject) => {
+    let i = files.length;
+    if (i <= 0) {
+      resolve();
+    }
+    files.forEach((filepath) => {
+      console.log("[FILES] Del File from Live:" + filepath);
+      fs.unlink(filepath, (err) => {
+        i--;
+        if (err) {
+          reject(err);
+        } else if (i <= 0) {
+          resolve();
+        }
+      });
     });
   });
 }
@@ -97,6 +104,65 @@ const deleteFolderRecursive = function (filepath) {
     if (ISDEBUG) console.log("[FILES] No Files to Clean");
   }
 };
+
+const deleteFolderRecursiveNew = function (filepath) {
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(filepath)) {
+      fs.readdir(filepath, (err, files) => {
+        if (err) {
+          reject(err);
+        } else {
+          Promise.all(
+            files.map((file) => {
+              return new Promise((resolve, reject) => {
+                const curPath = path.join(filepath, file);
+                fs.lstat(curPath, (err, stats) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    if (stats.isDirectory()) {
+                      deleteFolderRecursiveNew(curPath)
+                        .then(() => {
+                          resolve();
+                        })
+                        .catch((err) => {
+                          reject(err);
+                        });
+                    } else {
+                      fs.unlink(curPath, (err) => {
+                        if (err) {
+                          reject(err);
+                        } else {
+                          resolve();
+                        }
+                      });
+                    }
+                  }
+                });
+              });
+            })
+          )
+            .then(() => {
+              fs.rmdir(filepath, (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve();
+                }
+              });
+            })
+            .catch((err) => {
+              reject(err);
+            });
+        }
+      });
+    } else {
+      resolve(true);
+      if (ISDEBUG) console.log("[FILES] No Files to Clean");
+    }
+  });
+};
+
 var listFilesRecursive = function (dir, done) {
   var results = [];
   fs.readdir(dir, function (err, list) {
@@ -131,7 +197,7 @@ const downloadHttps = async function (inputUrl) {
       },
       function (response) {
         if (response.statusCode < 200 || response.statusCode > 299) {
-          reject("[DLURL] ERR failed to load page, status code: " + response.statusCode);
+          reject("[DLFETCH] ERR failed to load page, status code: " + response.statusCode);
           return;
         }
         response.setEncoding("utf8");
@@ -145,13 +211,89 @@ const downloadHttps = async function (inputUrl) {
       }
     );
     request.on("error", (err) => {
-      reject("[DLURL] ERR request error " + err);
+      reject("[DLFETCH] ERR request error " + err);
     });
     request.end();
   });
 };
 
-const downloadFile = async function (fetchData, cli_index = 0, cb = null) {
+const downloadUrl = async function (url_dl, cb = null) {
+  return new Promise((resolve, reject) => {
+    const reqUrl = new URL(url_dl);
+    //console.log(reqUrl);
+    let dlHost = reqUrl.host;
+    let dlDest = reqUrl.pathname + reqUrl.search;
+
+    let dest = reqUrl.pathname;
+    let dest_string = dest.indexOf("/") == 0 ? dest.substring(1) : dest;
+
+    if (!fs.existsSync(LIVE_FOLDER + "/" + dest_string) && !fs.existsSync(UPDATE_FOLDER + "/" + dest_string)) {
+      let folders = dest_string.split("/");
+      let j;
+      let struct = UPDATE_FOLDER + "/";
+      if (!fs.existsSync(struct)) {
+        fs.mkdirSync(struct);
+      }
+      for (j = 0; j < folders.length - 1; j++) {
+        struct = struct + folders[j];
+        if (fs.existsSync(struct) && !fs.existsSync(struct + "/")) {
+          console.log("[DOWNLOADER] del file blocking folder " + struct);
+          fs.unlinkSync(struct);
+        }
+        struct = struct + "/";
+        if (!fs.existsSync(struct)) {
+          fs.mkdirSync(struct);
+        }
+      }
+      var file = fs.createWriteStream(UPDATE_FOLDER + "/" + dest_string);
+
+      var request = http
+        .get(
+          {
+            path: dlDest,
+            hostname: dlHost,
+          },
+          function (response) {
+            if (response.statusCode < 200 || response.statusCode > 299) {
+              //console.log("Error Code:" + response.statusCode + " URL: " + url_dl);
+              fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
+                console.log("[DOWNLOADER] Error Code:" + response.statusCode + " Del File: " + UPDATE_FOLDER + "/" + dest_string);
+              });
+              resolve(false);
+              return;
+            }
+            response.pipe(file);
+
+            var download_size = Math.round(response.headers["content-length"] / 1048576);
+            var download_log = setInterval(function () {
+              var stats = fs.statSync(UPDATE_FOLDER + "/" + dest_string);
+              var size = Math.round(stats.size / 1048576);
+              console.log("[DOWNLOADER] status: " + Math.round((size / download_size) * 100) + "% (" + download_size + " MB)");
+            }, 2000);
+
+            file.on("finish", function () {
+              clearInterval(download_log);
+              //if (ISDEBUG) console.log("[DLURL] Finished URL: " + url_dl);
+              file.close(resolve(true));
+            });
+          }
+        )
+        .on("error", function (err) {
+          // Handle errors
+          console.log("[DOWNLOADER] err: " + err);
+          fs.unlink(UPDATE_FOLDER + "/" + dest_string, function () {
+            console.log("error");
+            resolve(err.message);
+          }); // Delete the file async. (But we don't check the result)
+        });
+    } else {
+      if (ISDEBUG) console.log("[DOWNLOADER] file exists");
+      resolve(false);
+    }
+  });
+};
+
+const downloadFile = async function (fetchData, cli_index = 0, forceDownload = false) {
   return new Promise(async (resolve, reject) => {
     if (!fetchData.hasOwnProperty("path")) {
       console.log("[DOWNLOADER] No Path provided for Element: " + cli_index);
@@ -159,7 +301,7 @@ const downloadFile = async function (fetchData, cli_index = 0, cb = null) {
     }
     var destination = fetchData.path;
     var fetchRequest = fetchData.fetch;
-    if (!fs.existsSync(LIVE_FOLDER + "/" + destination) && !fs.existsSync(UPDATE_FOLDER + "/" + destination)) {
+    if ((!fs.existsSync(LIVE_FOLDER + "/" + destination) && !fs.existsSync(UPDATE_FOLDER + "/" + destination)) || forceDownload) {
       var folders = destination.split("/");
       var j;
       var struct = UPDATE_FOLDER + "/";
@@ -180,14 +322,14 @@ const downloadFile = async function (fetchData, cli_index = 0, cb = null) {
       const res = await fetch(fetchRequest.url, fetchRequest.request);
       const fileStream = fs.createWriteStream(UPDATE_FOLDER + "/" + destination, { flags: "wx" });
       let fetchResult = await new Promise((resolve, reject) => {
-        console.log("[DOWNLOADER] Downloading: " + destination + " - ");
+        if (ISDEBUG) console.log("[DOWNLOADER] Downloading: " + destination);
         let downloadedBytes = 0;
         const totalBytes = res.headers.get("content-length");
         res.body.pipe(fileStream);
         res.body.on("data", (chunk) => {
-          downloadedBytes += chunk.length;
-          const progress = Math.round((downloadedBytes / totalBytes) * 100);
-          process.stdout.write(`Downloaded ${progress}%\r`);
+          // downloadedBytes += chunk.length;
+          // const progress = Math.round((downloadedBytes / totalBytes) * 100);
+          //process.stdout.write(`Downloaded ${progress}%\r`);
         });
         res.body.on("error", function (err) {
           console.log("[DOWNLOADER] ERR fetch: " + err);
@@ -259,7 +401,7 @@ export const configparser = {
   },
   //ToDo: Clean JSON from not downloadable URLs
 
-  parseUrls: function (address = BASE_URL) {
+  parseFetch: function (address = BASE_URL) {
     return new Promise(async (resolve, reject) => {
       let downloadData = await downloadHttps(address);
 
@@ -273,80 +415,169 @@ export const configparser = {
       let fetchData = responseJson.data;
       //URL_IGNORES TODO: check if urls not work and exclude from array of fetch data
       if (ISDEBUG) console.log("[PARSE] " + fetchData.length + " urls found");
+
       resolve({ fetchData, configFile: rawData });
     });
   },
 
+  parseUrls: function (file) {
+    return new Promise((resolve, reject) => {
+      if (!fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/" + file)) {
+        resolve([]);
+      }
+      let fileData = fs.readFileSync(BASEPATH + "/" + LIVE_FOLDER + "/" + file).toString();
+
+      fileData = fileData.replace(/\\n/g, "\n");
+      let urls_data = Array.from(getUrls(fileData, { requireSchemeOrWww: true, exclude: URL_IGNORES }));
+
+      /*
+            if (ISDEBUG) console.log("[PARSEURL] Excluded URLs");
+      if (ISDEBUG) console.log(URL_IGNORES);
+      URL_IGNORES.forEach((element) => {
+        if (urls_data.indexOf(element) > -1) {
+          let index = urls_data.indexOf(element);
+          if (ISDEBUG) console.log("Found index in Output " + index);
+          urls_data.splice(index, index + 1);
+          //In the array!
+        }
+      });
+
+      */
+      resolve(urls_data);
+    });
+  },
+
   //Download Configs to Temp Dir
-  download: async function (fetchData, configFile) {
+  downloadFetch: async function (fetchData, configFile, forceDownload) {
     return new Promise(async (resolve, reject) => {
       let configSync = false;
       if (fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json")) {
         if (fs.readFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json") == configFile) {
           configSync = true;
+          if (ISDEBUG) console.log("[DLFETCH] config up to date");
           resolve("sync");
           return;
         } else {
           configSync = false;
         }
-        if (ISDEBUG) console.log("[DOWNLOAD] config updated: " + configSync);
+        if (ISDEBUG) console.log("[DLFETCH] config updated: " + configSync);
       }
-      if (ISDEBUG) console.log("[DOWNLOAD] " + fetchData.length + " files to download");
-      let newdl_counter = 0;
+      if (ISDEBUG) console.log("[DLFETCH] " + fetchData.length + " files to download");
+      await deleteFolderRecursiveNew(UPDATE_FOLDER);
+      let downloadsSkipped = 0;
       try {
         await async.forEachOfLimit(fetchData, 5, (value, key, callback) => {
-          downloadFile(value, key).then(function (status) {
-            if (ISDEBUG && status) console.log("[DOWNLOAD] File OK: " + value.path);
-            if (!status) newdl_counter++;
+          downloadFile(value, key, forceDownload).then(function (status) {
+            if (ISDEBUG && status) console.log("[DLFETCH] File OK: " + value.path);
+            if (!status) downloadsSkipped++;
             callback();
           });
         });
-        if (ISDEBUG) console.log("[DOWNLOAD] done - skipped:" + newdl_counter + " from: " + fetchData.length);
-        resolve(true);
+        if (ISDEBUG) console.log("[DLFETCH] done - skipped:" + downloadsSkipped + " from: " + fetchData.length);
+        if (downloadsSkipped == fetchData.length && fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json")) {
+          //fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile);
+          resolve("sync");
+        } else {
+          resolve(true);
+        }
       } catch (error) {
-        console.error("[DOWNLOAD] error: " + err);
+        console.error("[DLFETCH] error: " + err);
         reject(err);
       }
     });
   },
-  //Copy Temp Downloads to Live System
-  sync: function () {
-    if (fs.existsSync(UPDATE_FOLDER)) {
-      if (ISDEBUG) console.log("[SYNC] begin");
-      copyFolderRecursiveSync(UPDATE_FOLDER, LIVE_FOLDER);
-    } else {
-      if (ISDEBUG) console.log("[SYNC] no temp folder - no files to sync");
-    }
+  downloadUrls: async function (urls) {
+    return new Promise(async (resolve, reject) => {
+      if (ISDEBUG) console.log("[DLURL] " + urls.length + " files to download");
+      if (ISDEBUG) console.log(urls);
+
+      if (typeof urls === "undefined" && !urls.length > 0) {
+        console.log("[DLURL] no URLs to download");
+        resolve(false);
+      }
+      await deleteFolderRecursiveNew(UPDATE_FOLDER);
+      let downloadsSkipped = 0;
+      async
+        .forEachOfLimit(urls, 5, (value, key, callback) => {
+          downloadUrl(value, key).then(function (status) {
+            let reqUrl = new URL(value);
+            if (ISDEBUG && status) console.log("[DLURL] File OK: " + reqUrl.host + reqUrl.pathname);
+            if (!status == true) downloadsSkipped++;
+            callback();
+          });
+        })
+        //downloadFile(urls[4], null)
+        .then(() => {
+          if (ISDEBUG) console.log("[DLURL] Done - skipped:" + downloadsSkipped + " from: " + urls.length);
+          //no files downloaded, all on storage
+          if (downloadsSkipped == urls.length) {
+            resolve("sync");
+          } else {
+            resolve(true);
+          }
+        })
+        .catch((err) => {
+          console.error("[DLURL] Error: " + err);
+          reject(err);
+        });
+    });
   },
-  clean: function (fetchData, configFile) {
-    if (ISDEBUG) console.log("[CLEAN] start");
-    if (!fs.existsSync(LIVE_FOLDER)) {
-      fs.mkdirSync(LIVE_FOLDER);
-    }
-    listFilesRecursive(LIVE_FOLDER, function (err, result) {
+  //Copy Temp Downloads to Live System
+  sync: async function () {
+    return new Promise(async (resolve, reject) => {
+      if (fs.existsSync(UPDATE_FOLDER)) {
+        if (ISDEBUG) console.log("[SYNC] begin");
+        copyFolderRecursiveSync(UPDATE_FOLDER, LIVE_FOLDER);
+        resolve(true);
+      } else {
+        if (ISDEBUG) console.log("[SYNC] no temp folder - no files to sync");
+        resolve("sync");
+      }
+    });
+  },
+  clean: async function (fetchData, configFile, directFiles) {
+    return new Promise(async (resolve, reject) => {
+      let filesInput = fetchData;
+      if (ISDEBUG) console.log("[CLEAN] start");
+      if (!fs.existsSync(LIVE_FOLDER)) {
+        fs.mkdirSync(LIVE_FOLDER);
+      }
+      const files = await new Promise((resolve, reject) => {
+        listFilesRecursive(LIVE_FOLDER, async function (err, result) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
+        });
+      });
       console.log("[CLEAN] files in drive:");
-      console.log(result);
+      console.log(files);
+
       for (let index = 0; index < fetchData.length; index++) {
-        let element = BASEPATH + "/" + LIVE_FOLDER + "/" + fetchData[index].path;
-        let checkFile = result.includes(element);
+        let element;
+        if (directFiles) {
+          element = BASEPATH + "/" + LIVE_FOLDER + "/" + fetchData[index];
+        } else {
+          element = BASEPATH + "/" + LIVE_FOLDER + "/" + fetchData[index].path;
+        }
+        let checkFile = files.includes(element);
         if (checkFile) {
-          let element_index = result.indexOf(element);
-          result.splice(element_index, 1);
+          let element_index = files.indexOf(element);
+          files.splice(element_index, 1);
         }
       }
-      result.splice(result.indexOf(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile), 1);
+
+      files.splice(files.indexOf(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile), 1);
       fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile);
       //Filter config.json not to delete
-      deleteFiles(result, function (err) {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log("[SYNC] all files that are not in JSON removed");
-        }
-      });
+      console.log(files);
+      await deleteFiles(files);
+      console.log("[SYNC] all files that are not in JSON removed");
+      console.log("---UPDATE ALL DONE---");
+      await deleteFolderRecursiveNew(UPDATE_FOLDER);
+      resolve(true);
     });
-    deleteFolderRecursive(UPDATE_FOLDER);
-    console.log("---UPDATE ALL DONE---");
   },
   get_content_dir: function () {
     return LIVE_FOLDER;

@@ -32,19 +32,43 @@ function download(timeout) {
   return new Promise((resolve, reject) => {
     async function downloadLoop() {
       try {
-        let parsedFile = await configparser.parseUrls();
-        let downloadSuccess = await configparser.download(parsedFile.fetchData, parsedFile.configFile);
-        if (downloadSuccess) {
-          configparser.sync(); //TODO make this async?
-          if (downloadSuccess != "sync") configparser.clean(parsedFile.fetchData, parsedFile.configFile);
-          resolve(true);
+        let parsedFile = await configparser.parseFetch();
+        let fetchSuccess = await configparser.downloadFetch(parsedFile.fetchData, parsedFile.configFile, true);
+        if (fetchSuccess != "sync") {
+          await configparser.sync();
+          await configparser.clean(parsedFile.fetchData, parsedFile.configFile);
+
+          let urlsArray = [];
+          let filesArray = [];
+          console.log("[MAIN] start download");
+          await Promise.all(
+            parsedFile.fetchData.map(async (data) => {
+              filesArray.push(data.path);
+              let element = await configparser.parseUrls(data.path);
+              urlsArray = urlsArray.concat(element);
+            })
+          );
+
+          let downloadSuccess = await configparser.downloadUrls(urlsArray);
+          if (downloadSuccess) {
+            await configparser.sync();
+
+            for (let index = 0; index < urlsArray.length; index++) {
+              const reqUrl = new URL(urlsArray[index]);
+              let dlDest = reqUrl.pathname;
+              dlDest = dlDest.indexOf("/") == 0 ? dlDest.substring(1) : dlDest;
+              filesArray.push(dlDest);
+            }
+            if (downloadSuccess != "sync") configparser.clean(filesArray, parsedFile.configFile, true);
+            resolve(true);
+          }
         }
         setTimeout(downloadLoop, timeout);
       } catch (error) {
         console.error(error);
         console.error("[MAIN] ERR try to restart ....");
         resolve(false);
-        setTimeout(downloadLoop, timeout);
+        //setTimeout(downloadLoop, timeout);
       }
     }
     downloadLoop();
