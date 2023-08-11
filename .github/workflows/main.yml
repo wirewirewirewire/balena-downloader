@@ -19,5 +19,5 @@ jobs:
         if: success()
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
-          balena_command: "push ${{secrets.BALENA_FLEET}} --logs"
+          balena_command: "push ${{secrets.BALENA_FLEET}}"
           balena_url: balena-cloud.com
