@@ -8,6 +8,8 @@ To get this project up and running, you will need to signup for a balena account
 
 Once you have downloaded this project, you can `balena push` it using the [balenaCLI][balena-cli]. This command will package up and push the code to the balena builders, where it will be compiled and built and deployed to every device in the application fleet. When it completes, you'll have a node.js web server running on your device and see some logs on your [balenaCloud dashboard][balena-dashboard].
 
+# THIS NEEDS AN UPDATE
+
 Set the `BASE_URL` service variable (service: fileupdate) to your endpoint (https://example.com/data.json)
 
 Now the project serves the downloaded json and all connected files:
