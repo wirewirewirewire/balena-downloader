@@ -4,6 +4,7 @@ import { configparser } from "./helpers/configparser.mjs";
 import path from "path";
 import { config } from "dotenv";
 config();
+const app = express();
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -21,9 +22,8 @@ async function main() {
   await configparser.init(__dirname, baseUrl, true);
   await download(timeout);
   //TODO check if we want a success download before start server
-  //const app = express();
-  //app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
-  //app.listen(serverport, () => console.log("[SERVER] start file server on port: " + serverport));
+  app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
+  app.listen(serverport, () => console.log("[SERVER] start file server on port: " + serverport));
 }
 
 main();
@@ -48,7 +48,7 @@ function download(timeout) {
               urlsArray = urlsArray.concat(element);
             })
           );
-
+          //download and sync urls from all config files
           let downloadSuccess = await configparser.downloadUrls(urlsArray);
           if (downloadSuccess) {
             await configparser.sync();
@@ -60,15 +60,16 @@ function download(timeout) {
               filesArray.push(dlDest);
             }
             if (downloadSuccess != "sync") configparser.clean(filesArray, parsedFile.configFile, true);
-            resolve(true);
+            await configparser.urlReplace(filesArray, urlsArray);
           }
         }
+        resolve(true);
         setTimeout(downloadLoop, timeout);
       } catch (error) {
         console.error(error);
         console.error("[MAIN] ERR try to restart ....");
         resolve(false);
-        //setTimeout(downloadLoop, timeout);
+        setTimeout(downloadLoop, timeout);
       }
     }
     downloadLoop();

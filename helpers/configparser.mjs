@@ -1,5 +1,5 @@
 import https from "https";
-import http from "http";
+import http, { get } from "http";
 import url from "url";
 import getUrls from "get-urls";
 
@@ -24,6 +24,13 @@ function IsJsonString(str) {
     return false;
   }
   return result;
+}
+
+//TODO add container name get via balena cli, if not respond localhost
+function getBalenaContainerName() {
+  return new Promise((resolve, reject) => {
+    resolve("localhost:3000");
+  });
 }
 
 function deleteFiles(files) {
@@ -567,7 +574,7 @@ export const configparser = {
           files.splice(element_index, 1);
         }
       }
-
+      //getBalenaContainerName()
       files.splice(files.indexOf(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile), 1);
       fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile);
       //Filter config.json not to delete
@@ -576,6 +583,38 @@ export const configparser = {
       console.log("[SYNC] all files that are not in JSON removed");
       console.log("---UPDATE ALL DONE---");
       await deleteFolderRecursiveNew(UPDATE_FOLDER);
+      resolve(true);
+    });
+  },
+  urlReplace: async function (filesList, urlsList) {
+    return new Promise(async (resolve, reject) => {
+      if (ISDEBUG) console.log("[URLREPLACE] start");
+
+      let fileDomain = await getBalenaContainerName();
+      for (let index = 0; index < filesList.length; index++) {
+        let element = filesList[index];
+        element = BASEPATH + "/" + LIVE_FOLDER + "/" + element;
+        if (ISDEBUG) console.log("[URLREPLACE] check elem: " + element);
+
+        if (!fs.existsSync(element)) continue;
+
+        let configFile = fs.readFileSync(element).toString();
+        configFile = configFile.replace(/:\/\/www\./g, "://");
+
+        for (let index = 0; index < urlsList.length; index++) {
+          const urlData = new URL(urlsList[index]);
+          let searchdata = urlData.search.replace(/\//g, "%2F");
+          let searchUrl = urlData.origin + urlData.pathname + searchdata;
+          let replaceUrl = "http://" + fileDomain + urlData.pathname;
+          configFile = configFile.replace(searchUrl, replaceUrl);
+        }
+
+        let newFileString = element.replace(/\/([^/]+)\.([^/.]+)$/, "/$1_files.$2");
+        if (fs.existsSync(newFileString)) {
+          fs.unlinkSync(newFileString);
+        }
+        fs.writeFileSync(newFileString, configFile);
+      }
       resolve(true);
     });
   },
