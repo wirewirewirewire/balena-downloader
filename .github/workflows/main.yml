@@ -21,7 +21,6 @@ jobs:
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
           balena_command: "push ${{env.BALENA_FLEET}}-amd64"
-          balena_url: balena-cloud.com
 
       - name: Balena Deploy Blocks aarch64
         uses: wirewirewirewire/balena-cli@v1
@@ -29,4 +28,3 @@ jobs:
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
           balena_command: "push ${{env.BALENA_FLEET}}-aarch64"
-          balena_url: balena-cloud.com
