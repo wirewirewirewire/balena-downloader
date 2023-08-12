@@ -48,6 +48,8 @@ function download(timeout) {
               urlsArray = urlsArray.concat(element);
             })
           );
+          let configFiles = await configparser.urlReplace(filesArray, urlsArray);
+          filesArray = filesArray.concat(configFiles);
           //download and sync urls from all config files
           let downloadSuccess = await configparser.downloadUrls(urlsArray);
           if (downloadSuccess) {
@@ -60,7 +62,6 @@ function download(timeout) {
               filesArray.push(dlDest);
             }
             if (downloadSuccess != "sync") configparser.clean(filesArray, parsedFile.configFile, true);
-            await configparser.urlReplace(filesArray, urlsArray);
           }
         }
         resolve(true);

@@ -533,7 +533,7 @@ export const configparser = {
   sync: async function () {
     return new Promise(async (resolve, reject) => {
       if (fs.existsSync(UPDATE_FOLDER)) {
-        if (ISDEBUG) console.log("[SYNC] begin");
+        if (ISDEBUG) console.log("[SYNC] copy to live folder...");
         copyFolderRecursiveSync(UPDATE_FOLDER, LIVE_FOLDER);
         resolve(true);
       } else {
@@ -591,14 +591,14 @@ export const configparser = {
       if (ISDEBUG) console.log("[URLREPLACE] start");
 
       let fileDomain = await getBalenaContainerName();
+      let returnConfigFiles = [];
       for (let index = 0; index < filesList.length; index++) {
-        let element = filesList[index];
-        element = BASEPATH + "/" + LIVE_FOLDER + "/" + element;
-        if (ISDEBUG) console.log("[URLREPLACE] check elem: " + element);
+        let baseFilePath = BASEPATH + "/" + LIVE_FOLDER + "/" + filesList[index];
+        if (ISDEBUG) console.log("[URLREPLACE] check elem: " + baseFilePath);
 
-        if (!fs.existsSync(element)) continue;
+        if (!fs.existsSync(baseFilePath)) continue;
 
-        let configFile = fs.readFileSync(element).toString();
+        let configFile = fs.readFileSync(baseFilePath).toString();
         configFile = configFile.replace(/:\/\/www\./g, "://");
 
         for (let index = 0; index < urlsList.length; index++) {
@@ -609,13 +609,16 @@ export const configparser = {
           configFile = configFile.replace(searchUrl, replaceUrl);
         }
 
-        let newFileString = element.replace(/\/([^/]+)\.([^/.]+)$/, "/$1_files.$2");
-        if (fs.existsSync(newFileString)) {
-          fs.unlinkSync(newFileString);
+        //let configFileName = filesList[index].replace(/\/([^/]+)\.([^/.]+)$/, "/$1_files.$2");
+        let configFileName = filesList[index].replace(/([^/]+)\.(\w+)$/, "$1_files.$2");
+        returnConfigFiles.push(configFileName);
+
+        if (fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/" + configFileName)) {
+          fs.unlinkSync(BASEPATH + "/" + LIVE_FOLDER + "/" + configFileName);
         }
-        fs.writeFileSync(newFileString, configFile);
+        fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/" + configFileName, configFile);
       }
-      resolve(true);
+      resolve(returnConfigFiles);
     });
   },
   get_content_dir: function () {
