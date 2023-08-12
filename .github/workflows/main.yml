@@ -20,7 +20,7 @@ jobs:
         if: success()
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
-          balena_command: "push ${{BALENA_FLEET}}-amd64"
+          balena_command: "push ${{env.BALENA_FLEET}}-amd64"
           balena_url: balena-cloud.com
 
       - name: Balena Deploy Blocks aarch64
@@ -28,5 +28,5 @@ jobs:
         if: success()
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
-          balena_command: "push ${{BALENA_FLEET}}-aarch64"
+          balena_command: "push ${{env.BALENA_FLEET}}-aarch64"
           balena_url: balena-cloud.com
