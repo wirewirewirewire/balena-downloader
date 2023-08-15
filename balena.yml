@@ -1,0 +1,24 @@
+name: downloader
+description: >-
+  Container to download all content from config json files and store them with a local file server
+version: 0.1.0
+type: sw.block
+assets:
+  repository:
+    type: blob.asset
+    data:
+      url: "https://github.com/wirewirewirewire/balena-downloader"
+#  logo:
+#    type: blob.asset
+#    data:
+#      url: "https://sample"
+data:
+  defaultDeviceType: generic-amd64
+  supportedDeviceTypes:
+    - raspberrypi4-64
+    - raspberrypi3
+    - raspberrypi3-64
+    - raspberrypi400-64
+    - intel-nuc
+    - genericx86-64-ext
+    - generic-amd64
