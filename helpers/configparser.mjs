@@ -41,7 +41,7 @@ function deleteFiles(files, addBasePath = false) {
       resolve();
     }
     files.forEach((filepath) => {
-      if (addBasePath) filepath = BASEPATH + "/" + LIVE_FOLDER + "/" + filepath
+      if (addBasePath) filepath = BASEPATH + "/" + LIVE_FOLDER + "/" + filepath;
       if (fs.existsSync(filepath)) {
         console.log("[FILES] Del File from Live:" + filepath);
         fs.unlink(filepath, (err) => {
@@ -421,8 +421,8 @@ export const configparser = {
   */
   clear: async function (fileArray = []) {
     return new Promise(async (resolve, reject) => {
-      if (fileArray.length >0)    {
-        console.log(fileArray)
+      if (fileArray.length > 0) {
+        console.log(fileArray);
         await deleteFiles(fileArray, true);
       } else {
         await deleteFolderRecursiveNew(LIVE_FOLDER);
@@ -606,6 +606,14 @@ export const configparser = {
       await deleteFiles(files);
       console.log("[SYNC] all files that are not in JSON removed");
       console.log("---UPDATE ALL DONE---");
+      await deleteFolderRecursiveNew(UPDATE_FOLDER);
+      resolve(true);
+    });
+  },
+  cleanFetch: async function (fetchData, configFile, directFiles) {
+    return new Promise(async (resolve, reject) => {
+      if (ISDEBUG) console.log("[CLEAN] start fetch cleanup");
+      fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile);
       await deleteFolderRecursiveNew(UPDATE_FOLDER);
       resolve(true);
     });

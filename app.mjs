@@ -40,9 +40,9 @@ function download(timeout) {
           })
         );
         if (fetchSuccess != "sync") {
-          await configparser.clear(filesArray); //delete all downloads, TODO, only detele config files from fetch
+          await configparser.clear(filesArray); //delete all downloads
           await configparser.sync();
-          await configparser.clean(parsedFile.fetchData, parsedFile.configFile);
+          await configparser.cleanFetch(parsedFile.fetchData, parsedFile.configFile);
           let urlsArray = [];
           console.log("[MAIN] start download");
           await Promise.all(
