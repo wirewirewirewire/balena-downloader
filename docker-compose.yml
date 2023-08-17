@@ -5,6 +5,8 @@ services:
   downloader:
     build: .
     privileged: true
+    ports:
+      - 3000:3000
     volumes:
       - "workdir:/usr/src/app/update_live" # shared workdir for other services
     labels:

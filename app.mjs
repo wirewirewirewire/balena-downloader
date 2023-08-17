@@ -10,14 +10,13 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 //const configparser = require("./helpers/configparser.mjs");
 
-const BASEURL = "https://preview-phi.vercel.app/api/download";
-const SLUG = "beispiel";
-
 //Download Dir, URL für Config, isDebug?
 async function main() {
+  let BASEURL = configparser.check_env_var("BASEURL", "https://preview-phi.vercel.app/api/download"); //Base URL for config files
   let timeout = configparser.check_env_var("SYNCTIMEOUT", 5000); //Timeout for sleep between sync checks
   let serverport = configparser.check_env_var("SERVERPORT", 3000); // port for express server
   let TOKEN = configparser.check_env_var("TOKEN", "notforyou", true);
+  let SLUG = configparser.check_env_var("SLUG", "beispiel");
   var baseUrl = BASEURL + "?slug=" + SLUG + "&token=" + TOKEN;
   await configparser.init(__dirname, baseUrl, true);
   await download(timeout);
@@ -34,17 +33,21 @@ function download(timeout) {
       try {
         let parsedFile = await configparser.parseFetch();
         let fetchSuccess = await configparser.downloadFetch(parsedFile.fetchData, parsedFile.configFile, true);
+        let filesArray = [];
+        await Promise.all(
+          parsedFile.fetchData.map(async (data) => {
+            filesArray.push(data.path);
+          })
+        );
         if (fetchSuccess != "sync") {
+          await configparser.clear(filesArray); //delete all downloads, TODO, only detele config files from fetch
           await configparser.sync();
           await configparser.clean(parsedFile.fetchData, parsedFile.configFile);
-
           let urlsArray = [];
-          let filesArray = [];
           console.log("[MAIN] start download");
           await Promise.all(
-            parsedFile.fetchData.map(async (data) => {
-              filesArray.push(data.path);
-              let element = await configparser.parseUrls(data.path);
+            filesArray.map(async (data) => {
+              let element = await configparser.parseUrls(data);
               urlsArray = urlsArray.concat(element);
             })
           );

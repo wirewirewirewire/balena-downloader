@@ -29,26 +29,36 @@ function IsJsonString(str) {
 //TODO add container name get via balena cli, if not respond localhost
 function getBalenaContainerName() {
   return new Promise((resolve, reject) => {
-    resolve("localhost:3000");
+    let serviceName = checkENV("RESIN_SERVICE_NAME", "localhost", false);
+    resolve(serviceName + ":3000");
   });
 }
 
-function deleteFiles(files) {
+function deleteFiles(files, addBasePath = false) {
   return new Promise((resolve, reject) => {
     let i = files.length;
     if (i <= 0) {
       resolve();
     }
     files.forEach((filepath) => {
-      console.log("[FILES] Del File from Live:" + filepath);
-      fs.unlink(filepath, (err) => {
+      if (addBasePath) filepath = BASEPATH + "/" + LIVE_FOLDER + "/" + filepath
+      if (fs.existsSync(filepath)) {
+        console.log("[FILES] Del File from Live:" + filepath);
+        fs.unlink(filepath, (err) => {
+          i--;
+          if (err) {
+            reject(err);
+          } else if (i <= 0) {
+            resolve();
+          }
+        });
+      } else {
+        console.log("[FILES] Del File not in Live" + filepath);
         i--;
-        if (err) {
-          reject(err);
-        } else if (i <= 0) {
+        if (i <= 0) {
           resolve();
         }
-      });
+      }
     });
   });
 }
@@ -406,6 +416,21 @@ export const configparser = {
       resolve(true);
     });
   },
+  /*
+  Delete files that are in array. If empty, delete complete download folder
+  */
+  clear: async function (fileArray = []) {
+    return new Promise(async (resolve, reject) => {
+      if (fileArray.length >0)    {
+        console.log(fileArray)
+        await deleteFiles(fileArray, true);
+      } else {
+        await deleteFolderRecursiveNew(LIVE_FOLDER);
+      }
+
+      resolve(true);
+    });
+  },
   //ToDo: Clean JSON from not downloadable URLs
 
   parseFetch: function (address = BASE_URL) {
@@ -421,8 +446,6 @@ export const configparser = {
       let rawData = JSON.stringify(responseJson);
       let fetchData = responseJson.data;
       //URL_IGNORES TODO: check if urls not work and exclude from array of fetch data
-      if (ISDEBUG) console.log("[PARSE] " + fetchData.length + " urls found");
-
       resolve({ fetchData, configFile: rawData });
     });
   },
@@ -469,6 +492,7 @@ export const configparser = {
         }
         if (ISDEBUG) console.log("[DLFETCH] config updated: " + configSync);
       }
+      if (ISDEBUG) console.log("[PARSE] " + fetchData.length + " urls found");
       if (ISDEBUG) console.log("[DLFETCH] " + fetchData.length + " files to download");
       await deleteFolderRecursiveNew(UPDATE_FOLDER);
       let downloadsSkipped = 0;
