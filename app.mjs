@@ -12,17 +12,22 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 //Download Dir, URL für Config, isDebug?
 async function main() {
-  let BASEURL = configparser.check_env_var("BASEURL", "https://preview-phi.vercel.app/api/download"); //Base URL for config files
   let timeout = configparser.check_env_var("SYNCTIMEOUT", 5000); //Timeout for sleep between sync checks
   let serverport = configparser.check_env_var("SERVERPORT", 3000); // port for express server
   let TOKEN = configparser.check_env_var("TOKEN", "notforyou", true);
   let SLUG = configparser.check_env_var("SLUG", "beispiel");
-  var baseUrl = BASEURL + "?slug=" + SLUG + "&token=" + TOKEN;
-  await configparser.init(__dirname, baseUrl, true);
+  let BASEURL = configparser.check_env_var("BASEURL", "https://preview-phi.vercel.app/api/download"); //Base URL for config files
+  let baseUrl = BASEURL + "?slug=" + SLUG + "&token=" + TOKEN;
+  let RESET_FILES = configparser.check_env_var("RESET_FILES", "false");
+
+  await configparser.init(__dirname, baseUrl, false);
+  if (RESET_FILES != "false") await configparser.clear(); //delete all downloads if set
   await download(timeout);
+
   //TODO check if we want a success download before start server
   app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
-  app.listen(serverport, () => console.log("[SERVER] start file server on port: " + serverport));
+  let serverName = process.env.RESIN_SERVICE_NAME ? process.env.RESIN_SERVICE_NAME : "localhost";
+  app.listen(serverport, () => console.log("[SERVER] start file server on http://" + serverName + ":" + serverport));
 }
 
 main();
@@ -44,7 +49,6 @@ function download(timeout) {
           await configparser.sync();
           await configparser.cleanFetch(parsedFile.fetchData, parsedFile.configFile);
           let urlsArray = [];
-          console.log("[MAIN] start download");
           await Promise.all(
             filesArray.map(async (data) => {
               let element = await configparser.parseUrls(data);
@@ -64,7 +68,7 @@ function download(timeout) {
               dlDest = dlDest.indexOf("/") == 0 ? dlDest.substring(1) : dlDest;
               filesArray.push(dlDest);
             }
-            if (downloadSuccess != "sync") configparser.clean(filesArray, parsedFile.configFile, true);
+            if (downloadSuccess != "sync") await configparser.clean(filesArray, parsedFile.configFile, true);
           }
         }
         resolve(true);

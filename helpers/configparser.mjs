@@ -53,7 +53,7 @@ function deleteFiles(files, addBasePath = false) {
           }
         });
       } else {
-        console.log("[FILES] Del File not in Live" + filepath);
+        if (ISDEBUG) console.log("[FILES] Del File not in Live" + filepath);
         i--;
         if (i <= 0) {
           resolve();
@@ -386,16 +386,16 @@ function checkENV(ENV, alt_var, secret = false) {
   //console.log(eval("process.env." +  ENV))
   if (eval("process.env." + ENV)) {
     if (secret) {
-      console.log("[SETVAR] " + ENV + " from ENV to: ***");
+      console.log("[SETVAR] " + ENV + " use ENV: ***");
     } else {
-      console.log("[SETVAR] " + ENV + " from ENV to: " + eval("process.env." + ENV));
+      console.log("[SETVAR] " + ENV + " use ENV: " + eval("process.env." + ENV));
     }
     return eval("process.env." + ENV);
   } else {
     if (secret) {
-      console.log("[SETVAR] " + ENV + " from Default to: ***");
+      console.log("[SETVAR] " + ENV + " use Default: ***");
     } else {
-      console.log("[SETVAR] " + ENV + " from Default to: " + alt_var);
+      console.log("[SETVAR] " + ENV + " use Default: " + alt_var);
     }
     return alt_var;
   }
@@ -422,9 +422,9 @@ export const configparser = {
   clear: async function (fileArray = []) {
     return new Promise(async (resolve, reject) => {
       if (fileArray.length > 0) {
-        console.log(fileArray);
         await deleteFiles(fileArray, true);
       } else {
+        console.log("[FILES] delete all files");
         await deleteFolderRecursiveNew(LIVE_FOLDER);
       }
 
@@ -504,7 +504,7 @@ export const configparser = {
             callback();
           });
         });
-        if (ISDEBUG) console.log("[DLFETCH] done - skipped:" + downloadsSkipped + " from: " + fetchData.length);
+        console.log("[DLFETCH] DONE " + (fetchData.length - downloadsSkipped) + " / " + fetchData.length);
         if (downloadsSkipped == fetchData.length && fs.existsSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json")) {
           //fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile);
           resolve("sync");
@@ -519,7 +519,7 @@ export const configparser = {
   },
   downloadUrls: async function (urls) {
     return new Promise(async (resolve, reject) => {
-      if (ISDEBUG) console.log("[DLURL] " + urls.length + " files to download");
+      console.log("[DLURL] " + urls.length + " URLs to download");
       if (ISDEBUG) console.log(urls);
 
       if (typeof urls === "undefined" && !urls.length > 0) {
@@ -539,7 +539,7 @@ export const configparser = {
         })
         //downloadFile(urls[4], null)
         .then(() => {
-          if (ISDEBUG) console.log("[DLURL] Done - skipped:" + downloadsSkipped + " from: " + urls.length);
+          console.log("[DLURL] DONE " + (urls.length - downloadsSkipped) + " / " + urls.length);
           //no files downloaded, all on storage
           if (downloadsSkipped == urls.length) {
             resolve("sync");
@@ -582,8 +582,8 @@ export const configparser = {
           }
         });
       });
-      console.log("[CLEAN] files in drive:");
-      console.log(files);
+      if (ISDEBUG) console.log("[CLEAN] files in drive:");
+      if (ISDEBUG) console.log(files);
 
       for (let index = 0; index < fetchData.length; index++) {
         let element;
@@ -602,7 +602,7 @@ export const configparser = {
       files.splice(files.indexOf(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile), 1);
       fs.writeFileSync(BASEPATH + "/" + LIVE_FOLDER + "/config.json", configFile);
       //Filter config.json not to delete
-      console.log(files);
+      if (ISDEBUG) console.log(files);
       await deleteFiles(files);
       console.log("[SYNC] all files that are not in JSON removed");
       console.log("---UPDATE ALL DONE---");
