@@ -1,4 +1,4 @@
-import https from "https";
+import axios from "axios";
 import http, { get } from "http";
 import url from "url";
 import getUrls from "get-urls";
@@ -26,10 +26,20 @@ function IsJsonString(str) {
   return result;
 }
 
+function IsJsonObj(obj) {
+  try {
+    JSON.stringify(obj);
+  } catch (e) {
+    return false;
+  }
+  return obj;
+}
+
 //TODO add container name get via balena cli, if not respond localhost
 function getBalenaContainerName() {
   return new Promise((resolve, reject) => {
-    let serviceName = checkENV("RESIN_SERVICE_NAME", "localhost", false);
+    //let serviceName = checkENV("RESIN_SERVICE_NAME", "localhost", false);
+    let serviceName = "localhost";
     resolve(serviceName + ":3000");
   });
 }
@@ -205,32 +215,23 @@ var listFilesRecursive = function (dir, done) {
 };
 
 const downloadHttps = async function (inputUrl) {
-  return new Promise((resolve, reject) => {
-    const reqUrl = new URL(inputUrl);
-    var request = https.request(
-      {
-        path: reqUrl.pathname + reqUrl.search,
-        hostname: reqUrl.hostname,
-      },
-      function (response) {
-        if (response.statusCode < 200 || response.statusCode > 299) {
-          reject("[DLFETCH] ERR failed to load page, status code: " + response.statusCode);
-          return;
-        }
-        response.setEncoding("utf8");
-        var data = "";
-        response.on("data", function (chunk) {
-          data += chunk;
-        });
-        response.on("end", () => {
-          resolve(data);
-        });
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios.get(inputUrl);
+      resolve(response.data);
+    } catch (error) {
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        reject(`[DLFETCH] ERR failed to load page, status code: ${error.response.status}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        reject(`[DLFETCH] ERR no response received: ${error.message}`);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        reject(`[DLFETCH] ERR request setup error: ${error.message}`);
       }
-    );
-    request.on("error", (err) => {
-      reject("[DLFETCH] ERR request error " + err);
-    });
-    request.end();
+    }
   });
 };
 
@@ -263,7 +264,7 @@ const downloadUrl = async function (url_dl, cb = null) {
         }
       }
       var file = fs.createWriteStream(UPDATE_FOLDER + "/" + dest_string);
-
+      //TODO change this to axios
       var request = http
         .get(
           {
@@ -425,7 +426,11 @@ export const configparser = {
         await deleteFiles(fileArray, true);
       } else {
         console.log("[FILES] delete all files");
-        await deleteFolderRecursiveNew(LIVE_FOLDER);
+        try {
+          await deleteFolderRecursiveNew(LIVE_FOLDER);
+        } catch (error) {
+          if (ISDEBUG) console.log("[FILES] ERR delete all files");
+        }
       }
 
       resolve(true);
@@ -436,8 +441,7 @@ export const configparser = {
   parseFetch: function (address = BASE_URL) {
     return new Promise(async (resolve, reject) => {
       let downloadData = await downloadHttps(address);
-
-      let responseJson = IsJsonString(downloadData);
+      let responseJson = IsJsonObj(downloadData);
       //console.log("[PARSE] Session: %j", json);
       if (responseJson == false) {
         reject("[PARSE] ERR response is no valid json");
