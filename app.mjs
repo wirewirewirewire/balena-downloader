@@ -27,7 +27,7 @@ async function main() {
   await download(timeout);
 
   //TODO check if we want a success download before start server
-  app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
+  app.use("/", express.static(configparser.get_content_dir(), { acceptRanges: false }), serveIndex(configparser.get_content_dir(), { icons: true }));
   app.listen(serverport, () => console.log("[SERVER] start file server on http://" + "localhost" + ":" + serverport));
 }
 
