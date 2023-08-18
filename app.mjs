@@ -27,7 +27,15 @@ async function main() {
   await download(timeout);
 
   //TODO check if we want a success download before start server
-  app.use("/", express.static(configparser.get_content_dir(), { acceptRanges: false }), serveIndex(configparser.get_content_dir(), { icons: true }));
+  app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
+  app.use((err, req, res, next) => {
+    if (err && err.status === 416) {
+      // Checking for Range Not Satisfiable error
+      res.status(416).send("Range Not Satisfiable");
+    } else {
+      next(err); // Pass the error to the next error-handling middleware (if any) or let Express default error handler handle it
+    }
+  });
   app.listen(serverport, () => console.log("[SERVER] start file server on http://" + "localhost" + ":" + serverport));
 }
 
