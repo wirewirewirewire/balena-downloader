@@ -39,13 +39,13 @@ function download(timeout) {
       try {
         let parsedFile = await configparser.parseFetch();
         let fetchSuccess = await configparser.downloadFetch(parsedFile.fetchData, parsedFile.configFile, true);
-        let filesArray = [];
-        await Promise.all(
-          parsedFile.fetchData.map(async (data) => {
-            filesArray.push(data.path);
-          })
-        );
         if (fetchSuccess != "sync") {
+          let filesArray = [];
+          await Promise.all(
+            parsedFile.fetchData.map(async (data) => {
+              filesArray.push(data.path);
+            })
+          );
           await configparser.clear(filesArray); //delete all downloads
           await configparser.sync();
           await configparser.cleanFetch(parsedFile.fetchData, parsedFile.configFile);
