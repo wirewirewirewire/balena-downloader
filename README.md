@@ -70,17 +70,28 @@ The following environment variables allow configuration of the `balena-downloade
 | `BASE_URL`           | URL                    | N/A                          | The URL to get the download config file.                                                                        |
 | `ISDEBUG`            | bool                   | false                        | Enable debug logging. Should be disabled in production                                                          |
 
-### Full Player
+### Full Website Player 📺
 
-Example of a full web player using [next.js](https://nextjs.org/), balena-browser[https://github.com/wirewirewirewire/browser|, [balena-xserver](https://github.com/wirewirewirewire/xserver) and [balena-control](https://github.com/wirewirewirewire/balena-control).
+Example of a full kiosk running a [next.js](https://nextjs.org/) or similar react or Vue.js apps (create-react-app, vite, etc.) with full offline data hosting.
 
-Create a folder with your next.js application and make sure it is running.
+#### Services 📦
+
+- [balena-browser](https://github.com/wirewirewirewire/browser) The Chrome browser supporting hardware acceleration.
+- [balena-xserver](https://github.com/wirewirewirewire/xserver) Displays the content.
+- 
+#### Optional Services
+
+- [balena-browser](https://github.com/wirewirewirewire/balena-downloader) Downloads static content for offline support
+- [balena-control](https://github.com/wirewirewirewire/balena-control) External control of your device via API.
+
+Create a folder with your next.js application and make sure it is running and building.
 
 #### docker-compose.yml
 
-The `docker-compose.yml` is the main entry point and will organize all containers.
+The `docker-compose.yml` is the main entry point of the balena application and will organize all services.
 
-Important: Replace `aarch64` with your actual architecture! Can be `amd64` or `aarch64`
+> [!IMPORTANT]  
+> Replace `aarch64` with your actual architecture! Can be `amd64` or `aarch64`
 
 `<YOUR_PROJECT>/docker-compose.yml`
 
