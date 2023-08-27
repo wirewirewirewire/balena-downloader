@@ -224,3 +224,13 @@ LAUNCH_URL=next-pwa/?preview=live
 That's it!
 
 You can now deploy your application via `balena push <APP_NAME or DEVICE_IP>`.
+
+#### Troubleshooting
+
+Error: EMFILE: too many open files, open '/usr/src/app/node_modules/caniuse-lite/data/features/testfeat.js']
+
+Add this to your `init`:
+```
+sysctl -w fs.inotify.max_user_instances=2045
+sysctl -w fs.file-max=65536
+```
