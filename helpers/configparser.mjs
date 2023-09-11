@@ -440,7 +440,13 @@ export const configparser = {
 
   parseFetch: function (address = BASE_URL) {
     return new Promise(async (resolve, reject) => {
-      let downloadData = await downloadHttps(address);
+      let downloadData;
+      try {
+        downloadData = await downloadHttps(address);
+      } catch (error) {
+        reject("[PARSE] ERR: " + error);
+        return;
+      }
       let responseJson = IsJsonObj(downloadData);
       //console.log("[PARSE] Session: %j", json);
       if (responseJson == false) {

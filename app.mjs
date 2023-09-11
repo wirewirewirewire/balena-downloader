@@ -25,7 +25,6 @@ async function main() {
     await configparser.clear(); //delete all downloads if set
   }
   await download(timeout);
-
   //TODO check if we want a success download before start server
   app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
   app.use((err, req, res, next) => {
