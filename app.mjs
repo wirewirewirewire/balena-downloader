@@ -8,7 +8,7 @@ import cors from "cors";
 config();
 const app = express();
 
-app.use(cors);
+app.options("*", cors());
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -20,7 +20,10 @@ async function main() {
   let serverport = configparser.check_env_var("SERVERPORT", 3000); // port for express server
   let TOKEN = configparser.check_env_var("TOKEN", "notforyou", true);
   let SLUG = configparser.check_env_var("SLUG", "beispiel");
-  let BASEURL = configparser.check_env_var("BASEURL", "https://preview-phi.vercel.app/api/download"); //Base URL for config files
+  let BASEURL = configparser.check_env_var(
+    "BASEURL",
+    "https://preview-phi.vercel.app/api/download"
+  ); //Base URL for config files
   let baseUrl = BASEURL + "?slug=" + SLUG + "&token=" + TOKEN;
   let RESET_FILES = configparser.check_env_var("RESET_FILES", "false");
 
@@ -30,7 +33,11 @@ async function main() {
   }
   await download(timeout);
   //TODO check if we want a success download before start server
-  app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
+  app.use(
+    "/",
+    express.static(configparser.get_content_dir()),
+    serveIndex(configparser.get_content_dir(), { icons: true })
+  );
   app.use((err, req, res, next) => {
     if (err && err.status === 416) {
       // Checking for Range Not Satisfiable error
@@ -39,7 +46,11 @@ async function main() {
       next(err); // Pass the error to the next error-handling middleware (if any) or let Express default error handler handle it
     }
   });
-  app.listen(serverport, () => console.log("[SERVER] start file server on http://" + "localhost" + ":" + serverport));
+  app.listen(serverport, () =>
+    console.log(
+      "[SERVER] start file server on http://" + "localhost" + ":" + serverport
+    )
+  );
 }
 
 main();
@@ -49,7 +60,11 @@ function download(timeout) {
     async function downloadLoop() {
       try {
         let parsedFile = await configparser.parseFetch();
-        let fetchSuccess = await configparser.downloadFetch(parsedFile.fetchData, parsedFile.configFile, true);
+        let fetchSuccess = await configparser.downloadFetch(
+          parsedFile.fetchData,
+          parsedFile.configFile,
+          true
+        );
         if (fetchSuccess != "sync") {
           let filesArray = [];
           await Promise.all(
@@ -59,7 +74,10 @@ function download(timeout) {
           );
           await configparser.clear(filesArray); //delete all downloads
           await configparser.sync();
-          await configparser.cleanFetch(parsedFile.fetchData, parsedFile.configFile);
+          await configparser.cleanFetch(
+            parsedFile.fetchData,
+            parsedFile.configFile
+          );
           let urlsArray = [];
           await Promise.all(
             filesArray.map(async (data) => {
@@ -67,7 +85,10 @@ function download(timeout) {
               urlsArray = urlsArray.concat(element);
             })
           );
-          let configFiles = await configparser.urlReplace(filesArray, urlsArray);
+          let configFiles = await configparser.urlReplace(
+            filesArray,
+            urlsArray
+          );
           filesArray = filesArray.concat(configFiles);
           //download and sync urls from all config files
           let downloadSuccess = await configparser.downloadUrls(urlsArray);
@@ -80,7 +101,8 @@ function download(timeout) {
               dlDest = dlDest.indexOf("/") == 0 ? dlDest.substring(1) : dlDest;
               filesArray.push(dlDest);
             }
-            if (downloadSuccess != "sync") await configparser.clean(filesArray, parsedFile.configFile, true);
+            if (downloadSuccess != "sync")
+              await configparser.clean(filesArray, parsedFile.configFile, true);
           }
         }
         resolve(true);
