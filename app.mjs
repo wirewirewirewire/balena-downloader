@@ -3,8 +3,12 @@ import serveIndex from "serve-index";
 import { configparser } from "./helpers/configparser.mjs";
 import path from "path";
 import { config } from "dotenv";
+import cors from "cors";
+
 config();
 const app = express();
+
+app.use(cors);
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
