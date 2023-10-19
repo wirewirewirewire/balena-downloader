@@ -8,9 +8,6 @@ import cors from "cors";
 config();
 const app = express();
 
-app.options("*", cors());
-
-
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 //const configparser = require("./helpers/configparser.mjs");
@@ -34,16 +31,14 @@ async function main() {
   }
   await download(timeout);
   //TODO check if we want a success download before start server
-<<<<<<< HEAD
+
+  app.use(cors());
   app.use(
     "/",
     express.static(configparser.get_content_dir()),
     serveIndex(configparser.get_content_dir(), { icons: true })
   );
-=======
-  app.use(cors());
-  app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
->>>>>>> f6d360ce35cda88445bc7023dd83d06efadc42fd
+
   app.use((err, req, res, next) => {
     if (err && err.status === 416) {
       // Checking for Range Not Satisfiable error
