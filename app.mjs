@@ -8,8 +8,6 @@ import cors from "cors";
 config();
 const app = express();
 
-app.use(cors);
-
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 //const configparser = require("./helpers/configparser.mjs");
@@ -30,6 +28,7 @@ async function main() {
   }
   await download(timeout);
   //TODO check if we want a success download before start server
+  app.use(cors());
   app.use("/", express.static(configparser.get_content_dir()), serveIndex(configparser.get_content_dir(), { icons: true }));
   app.use((err, req, res, next) => {
     if (err && err.status === 416) {
