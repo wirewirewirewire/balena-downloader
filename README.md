@@ -62,6 +62,20 @@ ALTERNATIVE: remain using `BASE_URL` and `BASE_CURL` and trigger the download if
 
 ![Set variables](https://user-images.githubusercontent.com/3281586/104630113-acdc4080-569a-11eb-9c3e-a83d39c0f88d.png)
 
+### Accessing the file system from your local computer
+
+You can use the tunnel to acces your balena device. The second Port (3011) is the on you can use on your local machine (http://localhost:3011 or http://127.0.0.1:3011).
+
+```
+balena tunnel 531bf2675bd2c4_ID_OF_BALENA_DEVICE -p 3000:3011
+```
+
+### Accessing from another container inside balena
+
+```
+NEXT_PUBLIC_DOWNLOADER_URL=http://downloader:3000
+```
+
 ### Used by
 
 - [balena-player](https://github.com/wirewirewirewire/balena-player) A media player with button support for Raspberry Pi based on OMX player
