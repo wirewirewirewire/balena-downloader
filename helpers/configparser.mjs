@@ -44,6 +44,12 @@ function getBalenaContainerName() {
   });
 }
 
+function listFolders(dirPath) {
+  return fs.promises.readdir(dirPath, { withFileTypes: true }).then((entries) => {
+    return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  });
+}
+
 function deleteFiles(files, addBasePath = false) {
   return new Promise((resolve, reject) => {
     let i = files.length;
@@ -420,8 +426,17 @@ export const configparser = {
   /*
   Delete files that are in array. If empty, delete complete download folder
   */
-  clear: async function (fileArray = []) {
+  clear: async function (fileArray = [], deleteFolders = false) {
     return new Promise(async (resolve, reject) => {
+      if (deleteFolders) {
+        var folderList = await listFolders(LIVE_FOLDER);
+        for (let i = 0; i < folderList.length; i++) {
+          var folder = BASEPATH + "/" + LIVE_FOLDER + "/" + folderList[i];
+          console.log("[FILES] Del Folder from Live:" + folder);
+          await deleteFolderRecursiveNew(folder);
+        }
+        //await deleteFolderRecursiveNew(LIVE_FOLDER);
+      }
       if (fileArray.length > 0) {
         await deleteFiles(fileArray, true);
       } else {

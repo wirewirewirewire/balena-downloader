@@ -58,7 +58,7 @@ function download(timeout) {
               filesArray.push(data.path);
             })
           );
-          await configparser.clear(filesArray); //delete all downloads
+          await configparser.clear(filesArray, true); //delete all downloads and folders
           await configparser.sync();
           await configparser.cleanFetch(parsedFile.fetchData, parsedFile.configFile);
           let urlsArray = [];
