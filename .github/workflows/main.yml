@@ -13,17 +13,17 @@ jobs:
     environment: balena
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Balena Deploy Blocks amd64
-        uses: wirewirewirewire/balena-cli@v1
+        uses: Theia-Scientific/balena-cli@v18
         if: success()
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
           balena_command: "push ${{vars.BALENA_FLEET}}-amd64"
 
       - name: Balena Deploy Blocks aarch64
-        uses: wirewirewirewire/balena-cli@v1
+        uses: Theia-Scientific/balena-cli@v18
         if: success()
         with:
           balena_api_token: ${{secrets.BALENA_TOKEN}}
